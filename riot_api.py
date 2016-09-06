@@ -90,6 +90,22 @@ class RiotApi(object):
         params.update(kwargs)
         return await self.request_url_json(api_url, params)
 
+    async def get_stats_ranked(self, summonerID, region='na', **kwargs):
+        api_path = '/api/lol/{}/v1.3/stats/by-summoner/{}/ranked'
+        api_path = api_path.format(region, summonerID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return await self.request_url_json(api_url, params)
+
+    async def get_stats_summary(self, summonerID, region='na', **kwargs):
+        api_path = '/api/lol/{}/v1.3/stats/by-summoner/{}/summary'
+        api_path = api_path.format(region, summonerID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return await self.request_url_json(api_url, params)
+
     async def get_summoner_by_name(self, summoner_names, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.4/summoner/by-name/{}'
         api_path = api_path.format(region, ','.join(summoner_names))
