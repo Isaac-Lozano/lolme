@@ -23,7 +23,7 @@ class DiscordBot(discord.Client):
         self.riot_key = self.conf.get('Riot', 'key')
 
         # riot api
-        self.robj = riot_api.RiotApi(self.riot_key)
+        self.robj = riot_api.RiotApi(self.loop, self.riot_key)
 
     # Override run() so we can remove the required parameter
     def run(self):
@@ -71,10 +71,10 @@ class DiscordBot(discord.Client):
     def on_rank(self, message, args):
         if len(args) < 1:
             yield from self.send_message(message.channel, "Error: No summoner specified")
-        # puts names into standard format: all lowercase with no whitespace
         name = ''.join([s.lower() for s in args])
-        sobj = self.robj.get_summoner_by_name([name])
-        lobj = self.robj.get_league_by_summonerid(sobj['name']['id'])
+        sobj = yield from self.robj.get_summoner_by_name([name])
+        yield from self.send_message(message.channel, "*{}*\n**level**: {}".format(
+            sobj[name]['name'], sobj[name]['summonerLevel']))
 
 if __name__ == "__main__":
     bot = DiscordBot('bot.conf')
