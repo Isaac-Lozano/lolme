@@ -68,7 +68,7 @@ class RiotApi(object):
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await (yield from self.request_url_json(api_url, params))
+        return (yield from self.request_url_json(api_url, params))
 
     @asyncio.coroutine
     def get_match_by_tournament(self, tournament_code, region='na', **kwargs):
