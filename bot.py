@@ -1,12 +1,12 @@
 import discord
 import asyncio
-import requests
 
 class DiscordBot(discord.Client):
     def __init__(self):
         super(DiscordBot, self).__init__()
         self.commands = {
-                "music": self.on_yt,
+        "commands": self.outputCommands,
+		"music": self.on_yt,
                 }
         self.player_map = {}
 
@@ -37,6 +37,13 @@ class DiscordBot(discord.Client):
                 except Exception as e:
                     await self.send_message(message.channel, "Error running command")
                     print("Error runninc command: {}".format(e))
+
+    async def outputCommands(self, message, args):
+        response = "```The commands are:\n"
+        for cmd in self.commands:
+            response = response + "!" + cmd + "\n"
+        response = response + "```"
+        await self.send_message(message.channel, response)
 
     async def on_yt(self, message, args):
         if len(args) > 0:
