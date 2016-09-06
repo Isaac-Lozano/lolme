@@ -29,12 +29,14 @@ class DiscordBot(discord.Client):
     def run(self):
         super(DiscordBot, self).run(self.discord_token)
 
-    async def on_ready(self):
+    @asyncio.coroutine
+    def on_ready(self):
         print("logged in as {}".format(self.user.name))
         print(self.user.id)
         print("----------")
 
-    async def on_message(self, message):
+    @asyncio.coroutine
+    def on_message(self, message):
         msg = message.content
 
         print(message.content)
@@ -52,21 +54,23 @@ class DiscordBot(discord.Client):
 
             if cmd in self.commands:
                 try:
-                    await self.commands[cmd](message, args)
+                    yield from self.commands[cmd](message, args)
                 except Exception as e:
-                    await self.send_message(message.channel, "Error running command")
+                    yield from self.send_message(message.channel, "Error running command")
                     print("Error running command: {}".format(e))
 
-    async def outputCommands(self, message, args):
+    @asyncio.coroutine
+    def outputCommands(self, message, args):
         response = "```The commands are:\n"
         for cmd in self.commands:
             response = response + "!" + cmd + "\n"
         response = response + "```"
-        await self.send_message(message.channel, response)
+        yield from self.send_message(message.channel, response)
 
-    async def on_rank(self, message, args):
+    @asyncio.coroutine
+    def on_rank(self, message, args):
         if len(args) < 1:
-            await self.send_message(message.channel, "Error: No summoner specified")
+            yield from self.send_message(message.channel, "Error: No summoner specified")
         # puts names into standard format: all lowercase with no whitespace
         name = ''.join([s.lower() for s in args])
         sobj = self.robj.get_summoner_by_name([name])
