@@ -25,7 +25,8 @@ class RiotApi(object):
         self.last_time = time.time()
         self.bucket = self.limit_messages
 
-    async def request_url_json(self, url, params, limit=True):
+    @asyncio.coroutine
+    def request_url_json(self, url, params, limit=True):
         # simple token bucket limiting
         current_time = time.time()
         delta_time = current_time - self.last_time
@@ -37,79 +38,88 @@ class RiotApi(object):
             raise RiotApiRateExceededException()
         self.bucket -= 1
         with aiohttp.Timeout(self.timeout):
-            async with self.session.get(url, params=params) as response:
-                if response.status != 200:
-                    raise RiotApiHttpException(response.status)
-                return await response.json()
+            response = yield from self.session.get(url, params=params)
+            if response.status != 200:
+                raise RiotApiHttpException(response.status)
+            return (yield from response.json())
 
-    async def get_champion(self, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_champion(self, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.2/champion'
         api_path = api_path.format(region)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_champion_by_id(self, championID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_champion_by_id(self, championID, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.2/champion/{}'
         api_path = api_path.format(region, championID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_match_by_tournament(self, tournament_code, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_match_by_tournament(self, tournament_code, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/match/by-tournament/{}/ids'
         api_path = api_path.format(region, tournament_code)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_match_for_tournament(self, matchID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_match_for_tournament(self, matchID, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/match/for-tournament/{}'
         api_path = api_path.format(region, matchID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_match(self, matchID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_match(self, matchID, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/match/{}'
         api_path = api_path.format(region, matchID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_matchlist(self, summonerID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_matchlist(self, summonerID, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/matchlist/by-summoner/{}'
         api_path = api_path.format(region, summonerID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_stats_ranked(self, summonerID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_stats_ranked(self, summonerID, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.3/stats/by-summoner/{}/ranked'
         api_path = api_path.format(region, summonerID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_stats_summary(self, summonerID, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_stats_summary(self, summonerID, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.3/stats/by-summoner/{}/summary'
         api_path = api_path.format(region, summonerID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))
 
-    async def get_summoner_by_name(self, summoner_names, region='na', **kwargs):
+    @asyncio.coroutine
+    def get_summoner_by_name(self, summoner_names, region='na', **kwargs):
         api_path = '/api/lol/{}/v1.4/summoner/by-name/{}'
         api_path = api_path.format(region, ','.join(summoner_names))
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)
-        return await self.request_url_json(api_url, params)
+        return (yield from self.request_url_json(api_url, params))

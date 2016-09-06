@@ -25,12 +25,14 @@ class DiscordBot(discord.Client):
     def run(self):
         super(DiscordBot, self).run(self.discord_token)
 
-    async def on_ready(self):
+    @asyncio.coroutine
+    def on_ready(self):
         print("logged in as {}".format(self.user.name))
         print(self.user.id)
         print("----------")
 
-    async def on_message(self, message):
+    @asyncio.coroutine
+    def on_message(self, message):
         msg = message.content
 
         print(message.content)
@@ -48,19 +50,21 @@ class DiscordBot(discord.Client):
 
             if cmd in self.commands:
                 try:
-                    await self.commands[cmd](message, args)
+                    yield from self.commands[cmd](message, args)
                 except Exception as e:
-                    await self.send_message(message.channel, "Error running command")
+                    yield from self.send_message(message.channel, "Error running command")
                     print("Error running command: {}".format(e))
 
-    async def outputCommands(self, message, args):
+    @asyncio.coroutine
+    def outputCommands(self, message, args):
         response = "```The commands are:\n"
         for cmd in self.commands:
             response = response + "!" + cmd + "\n"
         response = response + "```"
-        await self.send_message(message.channel, response)
+        yield from self.send_message(message.channel, response)
 
-    async def on_yt(self, message, args):
+    @asyncio.coroutine
+    def on_yt(self, message, args):
         if len(args) > 0:
             if args[0] == 'play':
                 if len(args) > 1:
@@ -69,23 +73,23 @@ class DiscordBot(discord.Client):
                     if voice:
                         if self.is_voice_connected(message.server):
                             vc = self.voice_client_in(message.server)
-                            await vc.move_to(voice)
+                            yield from vc.move_to(voice)
                         else:
-                            vc = await self.join_voice_channel(voice)
+                            vc = yield from self.join_voice_channel(voice)
                         if vc in self.player_map:
                             self.player_map[vc].stop()
-                        player = await vc.create_ytdl_player(url)
+                        player = yield from vc.create_ytdl_player(url)
                         self.player_map[vc] = player
                         player.start()
                 else:
-                    await self.send_message(message.channel, "No url specified")
+                    yield from self.send_message(message.channel, "No url specified")
             elif args[0] == 'stop':
                 if self.is_voice_connected(message.server):
                     self.player_map[self.voice_client_in(message.server)].stop()
             else:
-                await self.send_message(message.channel, "bad operation")
+                yield from self.send_message(message.channel, "bad operation")
         else:
-            await self.send_message(message.channel, "No operation specified")
+            yield from self.send_message(message.channel, "No operation specified")
 
 if __name__ == "__main__":
     bot = DiscordBot('bot.conf')
