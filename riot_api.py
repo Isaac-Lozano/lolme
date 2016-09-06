@@ -58,6 +58,14 @@ class RiotApi(object):
         params.update(kwargs)
         return await self.request_url_json(api_url, params)
 
+    async def get_league_by_summonerid(self, summonerID, region='na', **kwargs):
+        api_path = '/api/lol/{}/v2.5/league/by-summoner/{}'
+        api_path = api_path.format(region, summonerID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return await self.request_url_json(api_url, params)
+
     async def get_match_by_tournament(self, tournament_code, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/match/by-tournament/{}/ids'
         api_path = api_path.format(region, tournament_code)

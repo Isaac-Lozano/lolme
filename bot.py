@@ -1,4 +1,5 @@
 import discord
+import riot_api
 import asyncio
 import configparser
 
@@ -9,17 +10,20 @@ defaults = {
 class DiscordBot(discord.Client):
     def __init__(self, conf_file):
         super(DiscordBot, self).__init__()
+        # commands
         self.commands = {
             "commands": self.outputCommands,
-            "music": self.on_yt,
+            "rank": self.on_rank,
         }
-        self.player_map = {}
 
         # read config file
         self.conf = configparser.SafeConfigParser(defaults)
         self.conf.read(conf_file)
         self.discord_token = self.conf.get('Bot', 'discord_token')
         self.riot_key = self.conf.get('Riot', 'key')
+
+        # riot api
+        self.robj = riot_api.RiotApi(self.riot_key)
 
     # Override run() so we can remove the required parameter
     def run(self):
@@ -60,32 +64,13 @@ class DiscordBot(discord.Client):
         response = response + "```"
         await self.send_message(message.channel, response)
 
-    async def on_yt(self, message, args):
-        if len(args) > 0:
-            if args[0] == 'play':
-                if len(args) > 1:
-                    url = args[1]
-                    voice = message.author.voice_channel
-                    if voice:
-                        if self.is_voice_connected(message.server):
-                            vc = self.voice_client_in(message.server)
-                            await vc.move_to(voice)
-                        else:
-                            vc = await self.join_voice_channel(voice)
-                        if vc in self.player_map:
-                            self.player_map[vc].stop()
-                        player = await vc.create_ytdl_player(url)
-                        self.player_map[vc] = player
-                        player.start()
-                else:
-                    await self.send_message(message.channel, "No url specified")
-            elif args[0] == 'stop':
-                if self.is_voice_connected(message.server):
-                    self.player_map[self.voice_client_in(message.server)].stop()
-            else:
-                await self.send_message(message.channel, "bad operation")
-        else:
-            await self.send_message(message.channel, "No operation specified")
+    async def on_rank(self, message, args):
+        if len(args) < 1:
+            await self.send_message(message.channel, "Error: No summoner specified")
+        # puts names into standard format: all lowercase with no whitespace
+        name = ''.join([s.lower() for s in args])
+        sobj = self.robj.get_summoner_by_name([name])
+        lobj = self.robj.get_league_by_summonerid(sobj['name']['id'])
 
 if __name__ == "__main__":
     bot = DiscordBot('bot.conf')
