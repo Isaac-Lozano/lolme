@@ -1,14 +1,29 @@
 import discord
 import asyncio
+import configparser
+
+# not yet used
+defaults = {
+        }
 
 class DiscordBot(discord.Client):
-    def __init__(self):
+    def __init__(self, conf_file):
         super(DiscordBot, self).__init__()
         self.commands = {
-        "commands": self.outputCommands,
-		"music": self.on_yt,
-                }
+            "commands": self.outputCommands,
+            "music": self.on_yt,
+        }
         self.player_map = {}
+
+        # read config file
+        self.conf = configparser.SafeConfigParser(defaults)
+        self.conf.read(conf_file)
+        self.discord_token = self.conf.get('Bot', 'discord_token')
+        self.riot_key = self.conf.get('Riot', 'key')
+
+    # Override run() so we can remove the required parameter
+    def run(self):
+        super(DiscordBot, self).run(self.discord_token)
 
     async def on_ready(self):
         print("logged in as {}".format(self.user.name))
@@ -36,7 +51,7 @@ class DiscordBot(discord.Client):
                     await self.commands[cmd](message, args)
                 except Exception as e:
                     await self.send_message(message.channel, "Error running command")
-                    print("Error runninc command: {}".format(e))
+                    print("Error running command: {}".format(e))
 
     async def outputCommands(self, message, args):
         response = "```The commands are:\n"
@@ -73,5 +88,5 @@ class DiscordBot(discord.Client):
             await self.send_message(message.channel, "No operation specified")
 
 if __name__ == "__main__":
-    bot = DiscordBot()
-    bot.run('MjAwNDI4OTgwNDcyNTEyNTEy.Cl9KGw.UJTnD1BpHs83XHEzVt2mP-Rw7JQ')
+    bot = DiscordBot('bot.conf')
+    bot.run()
