@@ -15,7 +15,7 @@ class OverwatchApiRateExceededException(Exception):
 class OverwatchApi(object):
     def __init__(self, loop):
         self.session = aiohttp.ClientSession(loop=loop)
-        self.timeout = 10
+        self.timeout = 20
 
         # technically 10 req / 10 sec, but
         # that still triggers a 429. This doesn't.
@@ -43,8 +43,15 @@ class OverwatchApi(object):
             return (yield from response.json())
 
     @asyncio.coroutine
-    def get_player_profile(self, player, message):
+    def get_player_profile(self, player):
         api_path = '/pc/us/{}/profile'
+        api_path = api_path.format(player)
+        api_url = OVERWATCH_API_URL + api_path
+        return (yield from self.request_url_json(api_url))
+
+    @asyncio.coroutine
+    def get_player_hero_info(self, player):
+        api_path = '/pc/us/{}/quick-play/heroes'
         api_path = api_path.format(player)
         api_url = OVERWATCH_API_URL + api_path
         return (yield from self.request_url_json(api_url))
