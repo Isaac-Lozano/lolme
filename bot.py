@@ -98,6 +98,7 @@ class DiscordBot(discord.Client):
                 raise e
 
         player_level = overwatch_profile_response['data']['level']
+        player_rank = int(overwatch_profile_response['data']['competitive']['rank'])
         player_wins = int(overwatch_profile_response['data']['games']['competitive']['wins'])
         player_played = int(overwatch_profile_response['data']['games']['competitive']['played'])
         player_win_rate = player_wins/player_played
@@ -107,8 +108,13 @@ class DiscordBot(discord.Client):
         most_played_hero = overwatch_hero_response[0]['name']
         most_played_hero_playtime = overwatch_hero_response[0]['playtime']
 
+        #API is inconsistent with naming. This fixes the issue.
+        if most_played_hero == 'Soldier: 76':
+            most_played_hero = 'Soldier76'
+
         response = "```{}:\n".format(name)
         response += "Player Level: {}\n".format(player_level)
+        response += "Player Competitive Rank: {}\n".format(player_rank)
         response += "Player Competitive Win Rate: {}\n".format(player_win_rate)
         response += "Played QuickPlay for: {}\n".format(amount_of_time_played)
         response += "Most Played Hero: {} ({})\n```".format(most_played_hero, most_played_hero_playtime)
