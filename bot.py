@@ -1,5 +1,6 @@
 import discord
 import riot_api
+import overwatch_api
 import asyncio
 import configparser
 import traceback
@@ -14,6 +15,7 @@ class DiscordBot(discord.Client):
         # commands
         self.commands = {
             "commands": self.outputCommands,
+            "overwatch": self.overwatchGetProfile,
             "rank": self.on_rank,
 	        "matchlist":self.on_matchlist
         }
@@ -24,6 +26,8 @@ class DiscordBot(discord.Client):
         self.discord_token = self.conf.get('Bot', 'discord_token')
         self.riot_key = self.conf.get('Riot', 'key')
 
+        # overwatch api
+        self.overwatchAPI = overwatch_api.OverwatchApi(self.loop)
         # riot api
         self.robj = riot_api.RiotApi(self.loop, self.riot_key)
 
@@ -67,6 +71,32 @@ class DiscordBot(discord.Client):
         for cmd in self.commands:
             response = response + "!" + cmd + "\n"
         response = response + "```"
+        yield from self.send_message(message.channel, response)
+
+    @asyncio.coroutine
+    def overwatchGetProfile(self, message, args):
+        overwatchResponse = ''
+
+        name = args[0]
+
+        try:
+            overwatchResponse = yield from self.overwatchAPI.get_player_profile(name, message)
+        except overwatch_api.OverwatchApiHttpException as e:
+            if e.response == 404:
+                yield from self.send_message(message.channel, '**Error**: Player not found')
+                return
+            else:
+                raise e
+
+        playerLevel = overwatchResponse['data']['level']
+        playerWins = int(overwatchResponse['data']['games']['competitive']['wins'])
+        playerPlayed = int(overwatchResponse['data']['games']['competitive']['played'])
+        playerWinRate = playerWins/playerPlayed
+        playerWinRate = str(int(round(playerWinRate, 2) * 100)) + "%"
+        amountOfTimePlayed = overwatchResponse['data']['playtime']['quick']
+
+        response = "```{}:\n Player Level: {}\n Player Competitive Win Rate: {}\n Played QuickPlay for: {}\n```".format(name, playerLevel, playerWinRate, amountOfTimePlayed)
+        
         yield from self.send_message(message.channel, response)
 
     @asyncio.coroutine
