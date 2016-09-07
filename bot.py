@@ -71,11 +71,39 @@ class DiscordBot(discord.Client):
     @asyncio.coroutine
     def on_rank(self, message, args):
         if len(args) < 1:
-            yield from self.send_message(message.channel, "Error: No summoner specified")
+            yield from self.send_message(message.channel, '**Error**: No summoner specified')
+
+        response = ''
+
         name = ''.join([s.lower() for s in args])
-        sobj = yield from self.robj.get_summoner_by_name([name])
-        yield from self.send_message(message.channel, "*{}*\n**level**: {}".format(
-            sobj[name]['name'], sobj[name]['summonerLevel']))
+
+        try:
+            sobj = yield from self.robj.get_summoner_by_name([name])
+            response += "*{}*\n**level**: {}\n".format(sobj[name]['name'], sobj[name]['summonerLevel'])
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        try:
+            lobj = yield from self.robj.get_league_by_summonerid(sobj[name]['id'])
+            rank = 'Unranked'
+            for league in lobj[str(sobj[name]['id'])]:
+                if league['queue'] == 'RANKED_SOLO_5x5':
+                    rank = league['tier'].lower()
+                    for summoner in league['entries']:
+                        if summoner['playerOrTeamId'] == str(sobj[name]['id']):
+                            rank += summoner['division']
+            response += '**rank**: ' + rank + '\n'
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                response += '**rank**: Unranked\n'
+            else:
+                raise e
+
+        yield from self.send_message(message.channel, response)
 
     @asyncio.coroutine
     def test_fxn(self,message,args):
