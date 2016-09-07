@@ -14,7 +14,7 @@ class DiscordBot(discord.Client):
         self.commands = {
             "commands": self.outputCommands,
             "rank": self.on_rank,
-	    "test":self.test_fxn
+	        "matchlist":self.on_matchlist
         }
 
         # read config file
@@ -108,6 +108,35 @@ class DiscordBot(discord.Client):
     @asyncio.coroutine
     def test_fxn(self,message,args):
         yield from self.send_message(message.channel, "Ddayknight is gold 1, don't judge @OnVar#4902")
+
+    @asyncio.coroutine
+    def on_matchlist(self,message,args):
+        if len(args) < 1:
+            yield from self.send_message(message.channel, '**Error**: No summoner specified')
+
+        response = ''
+
+        name = ''.join([s.lower() for s in args])
+
+        try:
+            sobj = yield from self.robj.get_summoner_by_name([name])
+            response += "**{}'s Recent Matches**: \n".format(sobj[name]['name'])
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        matchlist = yield from self.robj.get_matchlist(summonerID=sobj[name]['id'], region='na')
+        
+        for matchIndex in range(len(matchlist["matches"])):   
+            response += (str(matchlist["matches"][matchIndex]["matchId"]))
+#        for match in matchlist["matches"]:
+#           response += (str(match) + "\n")
+
+        yield from self.send_message(message.channel, response)
+
 
 bot = DiscordBot('bot.conf')
 bot.run()
