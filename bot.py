@@ -14,6 +14,7 @@ class DiscordBot(discord.Client):
         self.commands = {
             "commands": self.outputCommands,
             "rank": self.on_rank,
+	    "test":self.test_fxn
         }
 
         # read config file
@@ -76,6 +77,9 @@ class DiscordBot(discord.Client):
         yield from self.send_message(message.channel, "*{}*\n**level**: {}".format(
             sobj[name]['name'], sobj[name]['summonerLevel']))
 
-if __name__ == "__main__":
-    bot = DiscordBot('bot.conf')
-    bot.run()
+    @asyncio.coroutine
+    def test_fxn(self,message,args):
+        yield from self.send_message(message.channel, "Ddayknight is gold 1, don't judge @OnVar#4902")
+
+bot = DiscordBot('bot.conf')
+bot.run()
