@@ -14,8 +14,8 @@ class DiscordBot(discord.Client):
         super(DiscordBot, self).__init__()
         # commands
         self.commands = {
-            "commands": self.outputCommands,
-            "overwatch": self.overwatchGetProfile,
+            "commands": self.output_commands,
+            "overwatch": self.overwatch_get_profile,
             "rank": self.on_rank,
 	        "matchlist":self.on_matchlist
         }
@@ -27,7 +27,7 @@ class DiscordBot(discord.Client):
         self.riot_key = self.conf.get('Riot', 'key')
 
         # overwatch api
-        self.overwatchAPI = overwatch_api.OverwatchApi(self.loop)
+        self.overwatchobj = overwatch_api.OverwatchApi(self.loop)
         # riot api
         self.robj = riot_api.RiotApi(self.loop, self.riot_key)
 
@@ -66,7 +66,7 @@ class DiscordBot(discord.Client):
                     traceback.print_exc()
 
     @asyncio.coroutine
-    def outputCommands(self, message, args):
+    def output_commands(self, message, args):
         response = "```The commands are:\n"
         for cmd in self.commands:
             response = response + "!" + cmd + "\n"
@@ -74,13 +74,13 @@ class DiscordBot(discord.Client):
         yield from self.send_message(message.channel, response)
 
     @asyncio.coroutine
-    def overwatchGetProfile(self, message, args):
-        overwatchResponse = ''
+    def overwatch_get_profile(self, message, args):
+        overwatch_response = ''
 
         name = args[0]
 
         try:
-            overwatchResponse = yield from self.overwatchAPI.get_player_profile(name, message)
+            overwatch_response = yield from self.overwatchobj.get_player_profile(name, message)
         except overwatch_api.OverwatchApiHttpException as e:
             if e.response == 404:
                 yield from self.send_message(message.channel, '**Error**: Player not found')
@@ -88,14 +88,17 @@ class DiscordBot(discord.Client):
             else:
                 raise e
 
-        playerLevel = overwatchResponse['data']['level']
-        playerWins = int(overwatchResponse['data']['games']['competitive']['wins'])
-        playerPlayed = int(overwatchResponse['data']['games']['competitive']['played'])
-        playerWinRate = playerWins/playerPlayed
-        playerWinRate = str(int(round(playerWinRate, 2) * 100)) + "%"
-        amountOfTimePlayed = overwatchResponse['data']['playtime']['quick']
+        player_level = overwatch_response['data']['level']
+        player_wins = int(overwatch_response['data']['games']['competitive']['wins'])
+        player_played = int(overwatch_response['data']['games']['competitive']['played'])
+        player_win_rate = player_wins/player_played
+        player_win_rate = str(int(round(player_win_rate, 2) * 100)) + "%"
+        amount_of_time_played = overwatch_response['data']['playtime']['quick']
 
-        response = "```{}:\n Player Level: {}\n Player Competitive Win Rate: {}\n Played QuickPlay for: {}\n```".format(name, playerLevel, playerWinRate, amountOfTimePlayed)
+        response = "```{}:\n".format(name)
+        response += "Player Level: {}\n".format(player_level)
+        response += "Player Competitive Win Rate: {}\n".format(player_win_rate)
+        response += "Played QuickPlay for: {}\n```".format(amount_of_time_played)
         
         yield from self.send_message(message.channel, response)
 
