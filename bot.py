@@ -2,6 +2,7 @@ import discord
 import riot_api
 import asyncio
 import configparser
+import traceback
 
 # not yet used
 defaults = {
@@ -58,7 +59,7 @@ class DiscordBot(discord.Client):
                     yield from self.commands[cmd](message, args)
                 except Exception as e:
                     yield from self.send_message(message.channel, "Error running command")
-                    print("Error running command: {}".format(e))
+                    traceback.print_exc()
 
     @asyncio.coroutine
     def outputCommands(self, message, args):
