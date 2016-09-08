@@ -55,3 +55,10 @@ class OverwatchApi(object):
         api_path = api_path.format(player)
         api_url = OVERWATCH_API_URL + api_path
         return (yield from self.request_url_json(api_url))
+
+    @asyncio.coroutine
+    def get_specific_hero_info(self, player, hero):
+        api_path = '/pc/us/{}/competitive-play/hero/{}/'
+        api_path = api_path.format(player, hero)
+        api_url = OVERWATCH_API_URL + api_path
+        return (yield from self.request_url_json(api_url))

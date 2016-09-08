@@ -16,6 +16,7 @@ class DiscordBot(discord.Client):
         self.commands = {
             "commands": self.output_commands,
             "overwatch": self.overwatch_get_player_info,
+            "overwatch_hero": self.overwatch_get_hero_info,
             "rank": self.on_rank,
 	        "matchlist":self.on_matchlist
         }
@@ -82,13 +83,6 @@ class DiscordBot(discord.Client):
 
         try:
             overwatch_profile_response = yield from self.overwatchobj.get_player_profile(name)
-        except overwatch_api.OverwatchApiHttpException as e:
-            if e.response == 404:
-                yield from self.send_message(message.channel, '**Error**: Player not found')
-                return
-            else:
-                raise e
-        try:
             overwatch_hero_response = yield from self.overwatchobj.get_player_hero_info(name)
         except overwatch_api.OverwatchApiHttpException as e:
             if e.response == 404:
@@ -120,6 +114,34 @@ class DiscordBot(discord.Client):
         response += "Most Played Hero: {} ({})\n```".format(most_played_hero, most_played_hero_playtime)
         
         yield from self.send_message(message.channel, response)
+
+    @asyncio.coroutine
+    def overwatch_get_hero_info(self, message, args):
+        specific_hero_response = ''
+        name = args[0]
+        print(name)
+        hero = args[1]
+        print(hero)
+
+        try:
+            specific_hero_response = yield from self.overwatchobj.get_specific_hero_info(name, hero)
+        except overwatch_api.OverwatchApiHttpException as e:
+            if e.response == 404:
+                yield from self.send_message(message.channel, '**Error**: Player/Hero not found')
+                return
+            else:
+                raise e
+        win_rate = specific_hero_response[hero]['WinPercentage']
+        games_played = specific_hero_response[hero]['GamesPlayed']
+
+        response = "```{} Info:\n".format(hero)
+        response += "Competitive Win Percentage: {}\n".format(win_rate)
+        response += "Competitive Games Played: {}\n".format(games_played)
+        response +="```"
+
+        yield from self.send_message(message.channel, response)
+
+
 
     @asyncio.coroutine
     def on_rank(self, message, args):
