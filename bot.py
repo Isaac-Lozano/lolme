@@ -245,6 +245,10 @@ class DiscordBot(discord.Client):
             100: {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}, 
             200: {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}
         }
+
+        # Get summoner names separately
+        summoner_names = {identity['participantId']: identity['player']['summonerName'] for identity in match['participantIdentities']}
+
         for participant in match['participants']:
             team_id = int(participant['teamId'])
             lane = participant['timeline']['lane']
@@ -256,22 +260,13 @@ class DiscordBot(discord.Client):
                 'assists': participant['stats']['assists'],
                 'gold': participant['stats']['goldEarned'],
                 'creep_score': participant['stats']['minionsKilled'],
-                'summoner_name': '',
+                'summoner_name': summoner_names[participant['participantId']],
                 'champion_name': all_champions['data'][str(participant['championId'])]['name']
             })
 
-        # @TODO Make this less ugly, David.
-        # Add in summoner names 
-        for team_id in summoner_info:
-            for lane in summoner_info[team_id]:
-                for summoner in summoner_info[team_id][lane]:
-                    for identity in match['participantIdentities']:
-                        if summoner['participant_id'] == identity['participantId']:
-                            summoner['summoner_name'] = identity['player']['summonerName']
-
         # Formulate response string
-        response = '```'
-        response += 'Match ID {:10} ({:10})\n'.format(match_id,match_creation)
+        response = '**Match ID: {}** *({})*\n'.format(match_id,match_creation)
+        response += '```'
         
         for team_id in summoner_info:
             response += 'Team {}\n'.format(team_id)
