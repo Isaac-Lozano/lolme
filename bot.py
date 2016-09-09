@@ -269,7 +269,6 @@ class DiscordBot(discord.Client):
                         if summoner['participant_id'] == identity['participantId']:
                             summoner['summoner_name'] = identity['player']['summonerName']
 
-        # Add in champion names
         # Formulate response string
         response = '```'
         response += 'Match ID {:10} ({:10})\n'.format(match_id,match_creation)
@@ -279,8 +278,8 @@ class DiscordBot(discord.Client):
             for lane in summoner_info[team_id]:
                 for summoner in summoner_info[team_id][lane]:  
                     response += '{:16} {:10} {}/{}/{} CS:{:3} Gold:{:5}\n'.format(
-                            summoner['summoner_name'], summoner['champion_name'], summoner['kills'], summoner['deaths'], summoner['assists'],
-                            summoner['creep_score'], summoner['gold']
+                            summoner['summoner_name'], summoner['champion_name'], summoner['kills'], 
+                            summoner['deaths'], summoner['assists'], summoner['creep_score'], summoner['gold']
                     )
             response += '\n'
         response += '```'
