@@ -132,3 +132,21 @@ class RiotApi(object):
         params = {'api_key':self.key}
         params.update(kwargs)
         return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
+    def get_static_champion(self, region='na', **kwargs):
+        api_path = '/api/lol/static-data/{}/v1.2/champion'
+        api_path = api_path.format(region)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
+    def get_static_champion_by_id(self, championID, region='na', **kwargs):
+        api_path = '/api/lol/static-data/{}/v1.2/champion/{}'
+        api_path = api_path.format(region, championID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
