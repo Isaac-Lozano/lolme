@@ -19,7 +19,7 @@ class DiscordBot(discord.Client):
             "overwatch": self.overwatch_get_player_info,
             "overwatch_hero": self.overwatch_get_hero_info,
             "rank": self.on_rank,
-	        "matchlist":self.on_matchlist,
+            "matchlist":self.on_matchlist,
             "match":self.on_match
         }
 
@@ -104,7 +104,7 @@ class DiscordBot(discord.Client):
         most_played_hero = overwatch_hero_response[0]['name']
         most_played_hero_playtime = overwatch_hero_response[0]['playtime']
 
-        #API is inconsistent with naming. This fixes the issue.
+        # API is inconsistent with naming. This fixes the issue.
         if most_played_hero == 'Soldier: 76':
             most_played_hero = 'Soldier76'
 
@@ -139,7 +139,7 @@ class DiscordBot(discord.Client):
         response = "```{} Info:\n".format(hero)
         response += "Competitive Win Percentage: {}\n".format(win_rate)
         response += "Competitive Games Played: {}\n".format(games_played)
-        response +="```"
+        response += "```"
 
         yield from self.send_message(message.channel, response)
 
@@ -287,5 +287,6 @@ class DiscordBot(discord.Client):
         yield from self.send_message(message.channel, response)
 
 
-bot = DiscordBot('bot.conf')
-bot.run()
+if __name__ == '__main__':
+    bot = DiscordBot('bot.conf')
+    bot.run()
