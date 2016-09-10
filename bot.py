@@ -31,6 +31,16 @@ class DiscordBot(discord.Client):
         self.conf.read(conf_file)
         self.discord_token = self.conf.get('Bot', 'discord_token')
 
+        autoload = self.conf.get('Bot', 'autoload_modules').split(',')
+        for modname in autoload:
+            try:
+                self._load_module(modname)
+            except ModuleLoadError as e:
+                print('==========')
+                print('Error loading module "{}": {}'.format(
+                    modname, e))
+                print('==========')
+
 
     # Override run() so we can remove the required parameter
     def run(self):
