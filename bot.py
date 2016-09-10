@@ -5,6 +5,10 @@ import traceback
 import datetime
 import importlib
 
+class ModuleLoadError(Exception):
+    def __init__(self, error):
+        self.error = error
+
 # not yet used
 defaults = {
         }
@@ -14,8 +18,9 @@ class DiscordBot(discord.Client):
         super(DiscordBot, self).__init__()
         # commands
         self.commands = {
-            "load": self.load_module,
-            "unload": self.unload_module,
+            "load": self.on_load,
+            "reload": self.on_reload,
+            "unload": self.on_unload,
             "list_modules": self.list_modules,
             "commands": self.output_commands,
         }
@@ -30,6 +35,39 @@ class DiscordBot(discord.Client):
     # Override run() so we can remove the required parameter
     def run(self):
         super(DiscordBot, self).run(self.discord_token)
+
+    def _load_module(self, modname, reload_mod=False):
+        try:
+            module = importlib.import_module("modules." + modname)
+            if reload_mod:
+                importlib.reload(module)
+            klass = getattr(module, modname)
+            instance = klass(self)
+            modcmds = instance.commands
+            if not callable(instance.unload):
+                raise AttributeError()
+        except ImportError as e:
+            traceback.print_exc()
+            raise ModuleLoadError('Module {} not found'.format(modname))
+        except AttributeError as e:
+            traceback.print_exc()
+            raise ModuleLoadError('Modue "{}" malformed'.format(modname))
+
+        for cmd in modcmds:
+            if cmd in self.commands:
+                try:
+                    instance.unload()
+                finally:
+                    raise ModuleLoadError('Command conflict in "{}": !{}'.format(modname, cmd))
+
+        self.modules.update({modname: instance})
+        self.commands.update(modcmds)
+
+    def _unload_module(self, modname):
+        for cmd in self.modules[modname].commands:
+            self.commands.pop(cmd)
+
+        self.modules.pop(modname).unload()
 
     @asyncio.coroutine
     def on_ready(self):
@@ -62,7 +100,7 @@ class DiscordBot(discord.Client):
                     traceback.print_exc()
 
     @asyncio.coroutine
-    def load_module(self, message, args):
+    def on_load(self, message, args):
         if len(args) < 1:
             yield from self.send_message(message.channel, '**Error**: No module specified')
             return
@@ -70,53 +108,46 @@ class DiscordBot(discord.Client):
         modname = args[0]
 
         try:
-            importlib.invalidate_caches()
-            module = importlib.import_module("modules." + modname)
-            klass = getattr(module, modname)
-            instance = klass(self)
-            modcmds = instance.commands
-            if not callable(instance.unload):
-                raise AttributeError()
-        except ImportError as e:
-            yield from self.send_message(message.channel,
-                                         '**Error**: Module "{}" not found'.format(modname))
-            traceback.print_exc()
-            return
-        except AttributeError as e:
-            yield from self.send_message(message.channel,
-                                         '**Error**: Module "{}" malformed'.format(modname))
-            traceback.print_exc()
-            return
+            self._load_module(modname, reload_mod=False)
+        except ModuleLoadError as e:
+            yield from self.send_message(messge.channel,
+                                         '**Error**: {}'.format(e))
 
-        for cmd in modcmds:
-            if cmd in self.commands:
-                yield from self.send_message(
-                    message.channel,
-                    '**Error**: Command conflict in "{}": !{}'.format(modname, cmd))
-                instance.unload()
-                return
-
-        self.modules.update({modname: instance})
-        self.commands.update(modcmds)
         yield from self.send_message(message.channel,
                                      'Module "{}" succesfully loaded'.format(modname))
 
     @asyncio.coroutine
-    def unload_module(self, message, args):
+    def on_reload(self, message, args):
         if len(args) < 1:
             yield from self.send_message(message.channel, '**Error**: No module specified')
             return
 
         modname = args[0]
+
+        try:
+            self._load_module(modname, reload_mod=True)
+        except ModuleLoadError as e:
+            yield from self.send_message(messge.channel,
+                                         '**Error**: {}'.format(e))
+
+        yield from self.send_message(message.channel,
+                                     'Module "{}" succesfully loaded'.format(modname))
+
+    @asyncio.coroutine
+    def on_unload(self, message, args):
+        if len(args) < 1:
+            yield from self.send_message(message.channel, '**Error**: No module specified')
+            return
+
+        modname = args[0]
+
         if modname not in self.modules:
             yield from self.send_message(message.channel,
                                          '**Error**: Module "{}" not currently loaded'.format(modname))
             return
 
-        for cmd in self.modules[modname].commands:
-            self.commands.pop(cmd)
+        self._unload_module(modname)
 
-        self.modules.pop(modname).unload()
         yield from self.send_message(message.channel,
                                      'Module "{}" succesfully unloaded'.format(modname))
 
