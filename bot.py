@@ -18,6 +18,7 @@ class DiscordBot(discord.Client):
         self.commands = {
             "load": self.load_module,
             "unload": self.unload_module,
+            "list_modules": self.list_modules,
             "commands": self.output_commands,
             "overwatch": self.overwatch_get_player_info,
             "overwatch_hero": self.overwatch_get_hero_info,
@@ -81,6 +82,7 @@ class DiscordBot(discord.Client):
         modname = args[0]
 
         try:
+            importlib.invalidate_caches()
             module = importlib.import_module("modules." + modname)
             klass = getattr(module, modname)
             instance = klass(self)
@@ -127,6 +129,15 @@ class DiscordBot(discord.Client):
         self.modules.pop(modname).unload()
         yield from self.send_message(message.channel,
                                      'Module "{}" succesfully unloaded'.format(modname))
+
+    @asyncio.coroutine
+    def list_modules(self, message, args):
+        response = '```\n'
+        response += 'loaded modules:\n'
+        for module in self.modules:
+            response += module + '\n'
+        response += '```'
+        yield from self.send_message(message.channel, response)
 
     @asyncio.coroutine
     def output_commands(self, message, args):
