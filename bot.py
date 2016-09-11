@@ -163,11 +163,14 @@ class DiscordBot(discord.Client):
 
     @asyncio.coroutine
     def list_modules(self, message, args):
-        response = '```\n'
-        response += 'loaded modules:\n'
-        for module in self.modules:
-            response += module + '\n'
-        response += '```'
+        if len(self.modules) == 0:
+            response = '```\nno modules loaded\n```'
+        else:
+            response = '```\n'
+            response += 'loaded modules:\n'
+            for module in self.modules:
+                response += module + '\n'
+            response += '```'
         yield from self.send_message(message.channel, response)
 
     @asyncio.coroutine
