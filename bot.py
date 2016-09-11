@@ -237,20 +237,25 @@ class DiscordBot(discord.Client):
             else:
                 raise e
 
+        # Get match creation datetime
         match_creation = datetime.datetime.fromtimestamp(match['matchCreation']/1000.0).strftime('%Y-%m-%d %I:%M %p')
-        
+
+        # Get match winner
+        team_win_status = {'Blue': 'Lost', 'Red': 'Lost'}
+        winning_team_id = 'Blue' if match['teams'][0]['winner'] is True and match['teams'][0]['teamId'] == 100 else 'Red'
+        team_win_status[winning_team_id] = 'Won'
 
         # Add participant ids, lanes, championId, k/d/a, gold, creep score, team id
         summoner_info = {
-            100: {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}, 
-            200: {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}
+            'Blue': {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}, 
+            'Red': {'TOP':[], 'JUNGLE':[], 'MIDDLE':[], 'BOTTOM':[]}
         }
 
         # Get summoner names separately
         summoner_names = {identity['participantId']: identity['player']['summonerName'] for identity in match['participantIdentities']}
 
         for participant in match['participants']:
-            team_id = int(participant['teamId'])
+            team_id = 'Blue' if participant['teamId'] == 100 else 'Red'
             lane = participant['timeline']['lane']
             summoner_info[team_id][lane].append({
                 'participant_id': participant['participantId'],
@@ -269,7 +274,7 @@ class DiscordBot(discord.Client):
         response += '```'
         
         for team_id in summoner_info:
-            response += 'Team {}\n'.format(team_id)
+            response += 'Team {} - {}\n'.format(team_id, team_win_status[team_id])
             for lane in summoner_info[team_id]:
                 for summoner in summoner_info[team_id][lane]:  
                     response += '{:16} {:10} {}/{}/{} CS:{:3} Gold:{:5}\n'.format(
