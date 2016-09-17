@@ -89,6 +89,15 @@ class RiotApi(object):
         return (yield from self.request_url_json(api_url, params))
 
     @asyncio.coroutine
+    def get_live_match(self, summonerID, platformID='NA1', **kwargs):
+        api_path = '/observer-mode/rest/consumer/getSpectatorGameInfo/{}/{}'
+        api_path = api_path.format(platformID, summonerID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
     def get_match(self, matchID, region='na', **kwargs):
         api_path = '/api/lol/{}/v2.2/match/{}'
         api_path = api_path.format(region, matchID)
@@ -136,6 +145,16 @@ class RiotApi(object):
     @asyncio.coroutine
     def get_static_champion(self, region='na', **kwargs):
         api_path = '/api/lol/static-data/{}/v1.2/champion'
+        api_path = api_path.format(region)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
+    def get_static_summoner_spell(self, region='na', **kwargs):
+        #https://global.api.pvp.net/api/lol/static-data/na/v1.2/summoner-spell?dataById=true&spellData=all
+        api_path = '/api/lol/static-data/{}/v1.2/summoner-spell'
         api_path = api_path.format(region)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}

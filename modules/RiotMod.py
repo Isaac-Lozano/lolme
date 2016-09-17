@@ -8,6 +8,7 @@ class RiotMod(object):
             "rank": self.on_rank,
             "matchlist": self.on_matchlist,
             "match": self.on_match,
+            "livematch": self.on_livematch
         }
         self.bot = bot
         self.riot_key = self.bot.conf.get('Riot', 'key')
@@ -148,6 +149,63 @@ class RiotMod(object):
                             summoner['summoner_name'], summoner['champion_name'], summoner['kills'], 
                             summoner['deaths'], summoner['assists'], summoner['creep_score'], summoner['gold']
                     )
+            response += '\n'
+        response += '```'
+        
+        yield from self.bot.send_message(message.channel, response)
+
+    @asyncio.coroutine
+    def on_livematch(self,message,args):
+        if len(args) < 1:
+            yield from self.bot.send_message(message.channel, '**Error**: No summoner name specified')
+
+        summoner_name = ''.join([s.lower() for s in args])
+
+        try:
+            summoner = yield from self.robj.get_summoner_by_name(summoner_names=[summoner_name])
+            match = yield from self.robj.get_live_match(summonerID=summoner[summoner_name]['id'])
+            all_champions = yield from self.robj.get_static_champion(region='na',dataById=True)
+            all_summoner_spells = yield from self.robj.get_static_summoner_spell(region='na',dataById=True,spellData='all')
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        # Get match creation datetime
+        match_creation = datetime.datetime.fromtimestamp(match['gameStartTime']/1000.0).strftime('%Y-%m-%d %I:%M %p')
+
+        # Get match length (so far)
+        minutes, seconds = divmod(match['gameLength'], 60)
+        hours, minutes = divmod(minutes, 60)
+        match_length = "{}:{}:{}".format(hours,minutes,seconds) if hours > 0 else "{}:{}".format(minutes,seconds)
+
+        # Add summoner names, champion names
+        summoner_info = {
+            'Blue': [], 
+            'Red': []
+        }
+
+        for summoner in match['participants']:
+            team = 'Blue' if summoner['teamId'] == 100 else 'Red'
+            summoner_info[team].append({
+                'summoner_name':summoner['summonerName'],
+                'champion_name':all_champions['data'][str(summoner['championId'])]['name'],
+                'summoner_spell1':all_summoner_spells['data'][str(summoner['spell1Id'])]['name'],
+                'summoner_spell2':all_summoner_spells['data'][str(summoner['spell2Id'])]['name']
+            })
+
+        # Formulate response string
+        response = '**Match ID: {}** *({})*\n'.format(match['gameId'],match_creation)
+        response += '```'
+        response += 'Match Time: {}\n'.format(match_length)
+        for team in summoner_info:
+            response += 'Team {}\n'.format(team)
+            for summoner in summoner_info[team]:  
+                response += '{:16} {:16} {:7} {:7}\n'.format(
+                        summoner['summoner_name'], summoner['champion_name'], summoner['summoner_spell1'], summoner['summoner_spell2']
+                )
             response += '\n'
         response += '```'
         
