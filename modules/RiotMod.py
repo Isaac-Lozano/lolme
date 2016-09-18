@@ -1,11 +1,13 @@
 import asyncio
 import riot_api
 import datetime
+import operator 
 
 class RiotMod(object):
     def __init__(self, bot):
         self.commands = {
-            "rank": self.on_rank,
+            #"rank": self.on_rank,
+            "summoner": self.on_summoner,
             "matchlist": self.on_matchlist,
             "match": self.on_match,
             "livematch": self.on_livematch
@@ -51,6 +53,74 @@ class RiotMod(object):
                 response += '**rank**: Unranked\n'
             else:
                 raise e
+
+        yield from self.bot.send_message(message.channel, response)
+
+    @asyncio.coroutine
+    def on_summoner(self, message, args):
+        if len(args) < 1:
+            yield from self.bot.send_message(message.channel, '**Error**: No summoner specified')
+
+        response = ''
+
+        name = ''.join([s.lower() for s in args])
+
+        # Get a summoner object from the riot api in order to get a summoner level.
+        try:
+            sobj = yield from self.robj.get_summoner_by_name([name])
+            response += "*{}*\n**Level**: {}\n".format(sobj[name]['name'], sobj[name]['summonerLevel'])
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        # Get a league object from the riot api in order to get the summoner rank.
+        try:
+            lobj = yield from self.robj.get_league_by_summonerid(sobj[name]['id'])
+            rank = 'Unranked'
+            for league in lobj[str(sobj[name]['id'])]:
+                if league['queue'] == 'RANKED_SOLO_5x5':
+                    rank = league['tier'].lower()
+                    for summoner in league['entries']:
+                        if summoner['playerOrTeamId'] == str(sobj[name]['id']):
+                            rank += summoner['division']
+            response += '**Rank**: ' + rank + '\n'
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                response += '**rank**: Unranked\n'
+            else:
+                raise e
+
+        # Get ranked stats object from the riot api.
+        try:
+            rsobj = yield from self.robj.get_stats_ranked(summonerID=sobj[name]['id'])
+            all_champions = yield from self.robj.get_static_champion(region='na',dataById=True)
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        # Sum up total games played for that particular summoner.
+        total_games_played = sum([champ['stats']['totalSessionsPlayed'] for champ in rsobj['champions']])
+
+        # Get total games played per champion. Get the top 5 most played champions.  
+        champs_num_games = {all_champions['data'][str(champ['id'])]['name']:champ['stats']['totalSessionsPlayed'] for champ in rsobj['champions'] if champ['id'] is not 0}
+        sorted_num_games = sorted(champs_num_games.items(), key=operator.itemgetter(1))[-5:]
+        most_played_champs = ', '.join([game[0] for game in sorted_num_games])
+        response += '**Most Played Champions**: {}\n'.format(most_played_champs)
+
+        # Get win rates per champion. Get the top 5 most winning champions.
+        champs_winrates = {
+            all_champions['data'][str(champ['id'])]['name']:champ['stats']['totalSessionsWon']/float(champ['stats']['totalSessionsPlayed']) 
+            for champ in rsobj['champions'] if champ['id'] is not 0 and champ['stats']['totalSessionsPlayed'] > (float(total_games_played)*0.02)
+        }
+        sorted_winrates = sorted(champs_winrates.items(), key=operator.itemgetter(1))[-5:]
+        most_winning_champs = ', '.join([game[0] for game in sorted_winrates])
+        response += '**Most Winning Champions**: {}\n'.format(most_winning_champs)
 
         yield from self.bot.send_message(message.channel, response)
 
@@ -203,7 +273,7 @@ class RiotMod(object):
         for team in summoner_info:
             response += 'Team {}\n'.format(team)
             for summoner in summoner_info[team]:  
-                response += '{:16} {:16} {:7} {:7}\n'.format(
+                response += '{:16} {:16} {:9} {:9}\n'.format(
                         summoner['summoner_name'], summoner['champion_name'], summoner['summoner_spell1'], summoner['summoner_spell2']
                 )
             response += '\n'

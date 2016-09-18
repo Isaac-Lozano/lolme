@@ -11,6 +11,8 @@ class RiotApiHttpException(Exception):
 
 class RiotApiRateExceededException(Exception):
     """Raised whenever the api rate limit has been passed"""
+    def __init__(self, response):
+        self.response = response
 
 class RiotApi(object):
     def __init__(self, loop, api_key):
@@ -35,7 +37,7 @@ class RiotApi(object):
         if self.bucket > self.limit_messages:
             self.bucket = self.limit_messages
         if self.bucket < 1:
-            raise RiotApiRateExceededException()
+            raise RiotApiRateExceededException("Riot Api rate request exceeded. Please wait until making the next request")
         self.bucket -= 1
         with aiohttp.Timeout(self.timeout):
             response = yield from self.session.get(url, params=params)
