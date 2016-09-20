@@ -117,11 +117,16 @@ class DiscordBot(discord.Client):
 
         modname = args[0]
 
+        if modname in self.modules:
+            yield from self.send_message(message.channel, '**Error**: Module already loaded')
+            return
+
         try:
             self._load_module(modname, reload_mod=False)
         except ModuleLoadError as e:
-            yield from self.send_message(messge.channel,
+            yield from self.send_message(message.channel,
                                          '**Error**: {}'.format(e))
+            return
 
         yield from self.send_message(message.channel,
                                      'Module "{}" succesfully loaded'.format(modname))
