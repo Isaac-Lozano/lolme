@@ -145,6 +145,15 @@ class RiotApi(object):
         return (yield from self.request_url_json(api_url, params))
 
     @asyncio.coroutine
+    def get_summoner_by_id(self, summoner_ids, region='na', **kwargs):
+        api_path = '/api/lol/{}/v1.4/summoner/{}'
+        api_path = api_path.format(region, ','.join(summoner_ids))
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
     def get_static_champion(self, region='na', **kwargs):
         api_path = '/api/lol/static-data/{}/v1.2/champion'
         api_path = api_path.format(region)
@@ -167,6 +176,15 @@ class RiotApi(object):
     def get_static_champion_by_id(self, championID, region='na', **kwargs):
         api_path = '/api/lol/static-data/{}/v1.2/champion/{}'
         api_path = api_path.format(region, championID)
+        api_url = RIOT_API_URL + api_path
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
+    def get_recent_matches_by_id(self, summonerID, region='na', **kwargs):
+        api_path = '/api/lol/{}/v1.3/game/by-summoner/{}/recent'
+        api_path = api_path.format(region,summonerID)
         api_url = RIOT_API_URL + api_path
         params = {'api_key':self.key}
         params.update(kwargs)

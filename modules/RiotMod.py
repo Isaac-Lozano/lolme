@@ -10,7 +10,8 @@ class RiotMod(object):
             "summoner": self.on_summoner,
             "matchlist": self.on_matchlist,
             "match": self.on_match,
-            "livematch": self.on_livematch
+            "livematch": self.on_livematch,
+            "recent": self.on_recent
         }
         self.bot = bot
         self.riot_key = self.bot.conf.get('Riot', 'key')
@@ -135,7 +136,7 @@ class RiotMod(object):
 
         try:
             sobj = yield from self.robj.get_summoner_by_name([name])
-            response += '**{}\'s Recent Match IDs: **\n```'.format(sobj[name]['name'])
+            response += '**{}\'s Ranked Match IDs: **\n```'.format(sobj[name]['name'])
         except riot_api.RiotApiHttpException as e:
             if e.response == 404:
                 yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
@@ -143,10 +144,9 @@ class RiotMod(object):
             else:
                 raise e
 
-
         matchlist = yield from self.robj.get_matchlist(summonerID=sobj[name]['id'])
         
-        for i in range(10):
+        for i in range(20):
             current_match = matchlist["matches"][i]
             current_match_id = current_match['matchId']
             current_match_time = datetime.datetime.fromtimestamp(current_match['timestamp']/1000.0).strftime('%Y-%m-%d %I:%M %p')
@@ -203,6 +203,7 @@ class RiotMod(object):
                 'assists': participant['stats']['assists'],
                 'gold': participant['stats']['goldEarned'],
                 'creep_score': participant['stats']['minionsKilled'],
+                'total_damage': participant['stats']['totalDamageDealt'],
                 'summoner_name': summoner_names[participant['participantId']],
                 'champion_name': all_champions['data'][str(participant['championId'])]['name']
             })
@@ -280,3 +281,77 @@ class RiotMod(object):
         response += '```'
         
         yield from self.bot.send_message(message.channel, response)
+
+    @asyncio.coroutine
+    def on_recent(self,message,args):
+        if len(args) < 1:
+            yield from self.bot.send_message(message.channel, '**Error**: No summoner name specified')
+
+        summoner_name = ''.join([s.lower() for s in args])
+
+        try:
+            summoner = yield from self.robj.get_summoner_by_name(summoner_names=[summoner_name])
+            #all_summoner_spells = yield from self.robj.get_static_summoner_spell(region='na',dataById=True,spellData='all')
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
+        try:
+            recent_matches = yield from self.robj.get_recent_matches_by_id(summonerID=summoner[summoner_name]['id'])
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Cannot retrieve recent matches.')
+                return
+            else:
+                raise e    
+
+        try:
+            all_champions = yield from self.robj.get_static_champion(region='na',dataById=True)
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Cannot retrieve all champion static data.')
+                return
+            else:
+                raise e
+            
+        # Add matches with each summoner names, champion names
+        matches = []
+
+        # Get match data
+        match_limit = 0
+        for match in recent_matches['games']:
+            if match_limit == 5:
+                break
+            match_info = {'match_id': match['gameId'], 'match_type': match['subType'], 'win_lose': 'WON' if match['stats']['win'] else 'LOST', 'create_date': datetime.datetime.fromtimestamp(match['createDate']/1000.0).strftime('%Y-%m-%d %I:%M %p'), 'Blue': [], 'Red': []}
+            for summoner in match['fellowPlayers']:
+                team = 'Blue' if summoner['teamId'] == 100 else 'Red'
+                match_info[team].append({
+                    'champion_name':all_champions['data'][str(summoner['championId'])]['name']
+                })
+            match_info['Blue' if match['teamId'] == 100 else 'Red'].append({
+                'summoner_name':summoner_name,
+                'champion_name':all_champions['data'][str(match['championId'])]['name']
+            })
+            matches.append(match_info)
+            match_limit += 1
+
+        # Formulate response string
+        response = '**{}\'s Recent Games**\n\n'.format(summoner_name[0].upper() + summoner_name[1:])
+        for match in matches:
+            response += '**{}** | {} | {} | *({})*\n'.format(match['win_lose'],match['match_id'],match['match_type'],match['create_date'])
+            for team in ['Blue','Red']:
+                team_champs = []
+                for summoner in match[team]:
+                    if 'summoner_name' in summoner.keys():
+                        team_champs.append("{} *({})*".format(summoner['champion_name'],summoner_name))
+                    else:
+                        team_champs.append(summoner['champion_name'])
+                response += ', '.join(team_champs)
+                response += '\n'
+            response += '\n'
+        
+        yield from self.bot.send_message(message.channel, response)
+
