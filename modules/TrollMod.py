@@ -87,6 +87,7 @@ class TrollMod(object):
         self.commands = {
             "flip": self.on_flip,
             "unflip": self.on_unflip,
+            "gif": self.on_gif,
         }
         self.bot = bot
 
@@ -109,3 +110,9 @@ class TrollMod(object):
     def on_unflip(self, message, args):
         msg = ' '.join(args)
         yield from self.bot.send_message(message.channel, msg + ' ノ( ゜-゜ノ)')
+
+    @asyncio.coroutine
+    def on_gif(self, message, args):
+        gif_name = args[0]
+        with open('gifs/thresh_troll.gif', 'rb') as f:
+            yield from self.bot.send_file(message.channel, f)
