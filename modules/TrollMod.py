@@ -1,5 +1,9 @@
 import asyncio
 
+gif_link_map = {
+    "thresh": "http://i.imgur.com/75xQfzE.gif"
+}
+
 upsidedown_map = {
     'a': 'ɐ',
     'b': 'q',
@@ -113,6 +117,7 @@ class TrollMod(object):
 
     @asyncio.coroutine
     def on_gif(self, message, args):
-        gif_name = args[0]
-        with open('gifs/thresh_troll.gif', 'rb') as f:
-            yield from self.bot.send_file(message.channel, f)
+        msg = ' '.join(args)
+        gif_link = gif_link_map[msg]
+        yield from self.bot.send_message(message.channel, gif_link)
+        
