@@ -49,7 +49,7 @@ class OverwatchMod(object):
                 return
             else: 
                 raise e
-        # TODO Work on cases :)
+
         # Checks to see if the field is there within the object. Other variables are dependent upon 'wins'.
         try:
             player_wins = int(overwatch_profile_response['data']['games']['competitive']['wins']) or 'N/A'
@@ -62,6 +62,7 @@ class OverwatchMod(object):
         except KeyError:
             player_wins = 'N/A'
             player_win_rate = 'N/A'
+
         player_level = overwatch_profile_response['data']['level']
         player_rank = overwatch_profile_response['data']['competitive']['rank'] or 'N/A'
         if player_rank != 'N/A':
@@ -92,19 +93,28 @@ class OverwatchMod(object):
         
         name = args[0]
         hero = args[1]
-
+        
         try:
             specific_hero_response = yield from self.overwatchobj.get_specific_hero_info(name, hero)
+            if not specific_hero_response[hero]:
+                yield from self.bot.send_message(message.channel, "**Error**: Hero does not exist.")
+                return
         except overwatch_api.OverwatchApiHttpException as e:
             if e.response == 404:
-                yield from self.send_message(message.channel, '**Error**: Player/Hero not found')
+                yield from self.bot.send_message(message.channel, '**Error**: Player/Hero not found')
                 return
             else:
                 raise e
-        win_rate = specific_hero_response[hero]['WinPercentage']
-        games_played = specific_hero_response[hero]['GamesPlayed']
+        try:
+            win_rate = specific_hero_response[hero]['WinPercentage'] or 'N/A'
+            games_played = specific_hero_response[hero]['GamesPlayed'] or 'No competitive games played with {}'.format(hero)
+        except KeyError:
+            win_rate = 'N/A'
+            games_played = 'No competitive games played with {}'.format(hero)
 
-        response = "```{} Info:\n".format(hero)
+        player_name = name.split('-')
+
+        response = "```{} ({}) Info:\n".format(player_name[0], hero)
         response += "Competitive Win Percentage: {}\n".format(win_rate)
         response += "Competitive Games Played: {}\n".format(games_played)
         response += "```"
