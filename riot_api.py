@@ -189,3 +189,12 @@ class RiotApi(object):
         params = {'api_key':self.key}
         params.update(kwargs)
         return (yield from self.request_url_json(api_url, params))
+
+    @asyncio.coroutine
+    def get_champion_level_by_id(self, summonerID,region='NA1', **kwargs):
+        api_path = '/championmastery/location/{}/player/{}/topchampions'
+        api_path = api_path.format(region, summonerID)
+        api_url = RIOT_API_URL + api_path   
+        params = {'api_key':self.key}
+        params.update(kwargs)
+        return (yield from self.request_url_json(api_url, params))

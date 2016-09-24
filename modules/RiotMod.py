@@ -123,6 +123,22 @@ class RiotMod(object):
         most_winning_champs = ', '.join([game[0] for game in sorted_winrates])
         response += '**Most Winning Champions**: {}\n'.format(most_winning_champs)
 
+        # Get champions with top champion levels.
+        try:
+            champ_levels = yield from self.robj.get_champion_level_by_id(summonerID=sobj[name]['id'])
+            response += '**Top Champion Levels**: '
+            level_strings = []
+            for champ in champ_levels:
+                level_strings.append(' {} (Level {})'.format(all_champions['data'][str(champ['championId'])]['name'],champ['championLevel']))
+            response += ','.join(level_strings)
+            response += "\n"
+        except riot_api.RiotApiHttpException as e:
+            if e.response == 404:
+                yield from self.bot.send_message(message.channel, '**Error**: Summoner not found')
+                return
+            else:
+                raise e
+
         yield from self.bot.send_message(message.channel, response)
 
     @asyncio.coroutine
