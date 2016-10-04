@@ -2,6 +2,7 @@ import asyncio
 
 gif_link_map = {
     "thresh": "http://i.imgur.com/75xQfzE.gif"
+    "zilean": "http://i.imgur.com/HFPyl6Y.gif"
 }
 
 upsidedown_map = {
